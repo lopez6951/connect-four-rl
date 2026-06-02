@@ -55,8 +55,10 @@ At the start of training, epsilon is high so the agent explores widely. As train
 ### DQN Update
 
 The agent updates its network weights using the Bellman equation as a training target:
-texttarget = reward + gamma * max(Q_target(next_state)) * (1 - done)
+```text
+target = reward + gamma * max(Q_target(next_state)) * (1 - done)
 loss = MSE(Q(state, action), target)
+```
 
 where:
 * Q is the online network being trained
@@ -97,23 +99,23 @@ connect-four-rl/
 ├── .gitignore
 │
 ├── src/
-│   ├── main.py             
-│   ├── board.py    
-│   ├── game.py      
-│   ├── players.py       
+│   ├── main.py             # Entry point: train, evaluate, or play
+│   ├── board.py            # Board state, legal moves, win/draw detection
+│   ├── game.py             # Two-player game loop
+│   ├── players.py          # Random and greedy baseline agents
 │   │
 │   └── ai/
-│       ├── dqn.py
-│       ├── heuristic.py   
-│       └── minimax.py   
+│       ├── dqn.py          # DQN agent: network, replay buffer, training loop
+│       ├── heuristic.py    # Greedy heuristic player for evaluation
+│       └── minimax.py      # Optional minimax agent for benchmarking
 │
 ├── tests/
-│   ├── test_board.py   
+│   ├── test_board.py       # Unit tests for board logic and win detection
 │   ├── test_win_detection.py
-│   └── test_ai_moves.py   
+│   └── test_ai_moves.py    # Tests for move legality and agent behavior
 │
 └── experiments/
-    └── run_matches.py     
+    └── run_matches.py      # Scripts to run evaluation tournaments and log results
 ```
 
 ## Setup
