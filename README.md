@@ -8,27 +8,27 @@ Connect Four is a good AI problem because the agent must choose actions in a com
 
 ## Why This Is AI
 
-This project focuses on reinforcement learning, where an agent learns a policy through trial and error. The agent observes the current board state, selects a valid column as its action, receives a reward based on the game result, and updates its strategy over many games.
+This project implements Deep Q-Network (DQN) reinforcement learning from scratch. The agent observes the current board state as a numerical array, passes it through a neural network to estimate Q-values for each possible action, and selects moves using an epsilon-greedy policy. Over thousands of training games, the network learns to approximate the value of each (state, action) pair and improves its play accordingly.
 
-The main AI challenge is that Connect Four has many possible board states, so the agent must learn useful patterns from experience rather than memorize every possible game. We will start with a simple Q-learning approach and may use a smaller board or feature-based state representation if the full state space becomes too large.
+The core challenge is that Connect Four has an enormous number of possible board configurations, making tabular Q-learning; where Q-values are stored in a lookup table — completely infeasible. DQN addresses this by using a neural network as a function approximator, allowing the agent to generalize from seen board states to unseen ones.
 
 ## AI Methods
 
 The main AI techniques we plan to implement are:
 
-* Q-learning from scratch
-* Epsilon-greedy exploration
-* Reward-based policy updates
-* Training through repeated games
-* Baseline agents such as random and greedy players
-* Optional self-play training
-* Optional comparison against a minimax search agent if time allows
+* Deep Q-Network (DQN) with a fully connected neural network (PyTorch)
+* Epsilon-greedy exploration with decay over training
+* Experience replay buffer for stable training
+* Target network with periodic updates to reduce training instability
+* Reward-based policy updates using the Bellman equation
+* Baseline agents: random player and greedy heuristic player
+* Optional: self-play training and minimax comparison agent
 
 ## Reinforcement Learning Setup
 
 ### State
 
-A state represents the current Connect Four board. The board stores which cells are empty, which cells belong to Player 1, and which cells belong to Player 2.
+A state represents the current Connect Four board. The board stores which cells are empty, which cells belong to Player 1, and which cells belong to Player 2. The board is represented as a 42-dimensional numerical array (flattened 6×7 grid), where each cell is encoded as 0 (empty), 1 (agent's piece), or -1 (opponent's piece). This array is fed directly into the neural network.
 
 ### Action
 
@@ -50,20 +50,20 @@ The agent will use an epsilon-greedy policy:
 * With probability epsilon, the agent explores by choosing a random valid move.
 * With probability `1 - epsilon`, the agent exploits by choosing the move with the best known Q-value.
 
-### Q-Learning Update
+At the start of training, epsilon is high so the agent explores widely. As training progresses, epsilon decays so the agent increasingly exploits what it has learned.
 
-The agent will update its Q-values using the standard Q-learning rule:
+### DQN Update
 
-```text
-Q(state, action) = Q(state, action) + alpha * [reward + gamma * max(Q(next_state, next_action)) - Q(state, action)]
-```
+The agent updates its network weights using the Bellman equation as a training target:
+texttarget = reward + gamma * max(Q_target(next_state)) * (1 - done)
+loss = MSE(Q(state, action), target)
 
 where:
-
-* `alpha` is the learning rate
-* `gamma` is the discount factor
-* `reward` is the result of the move or game
-* `max(Q(next_state, next_action))` estimates the best future value from the next state
+* Q is the online network being trained
+* Q_target is a periodically frozen copy of the network used to generate stable targets
+* gamma is the discount factor
+* done is 1 if the game ended, 0 otherwise
+Experience tuples (state, action, reward, next_state, done) are stored in a replay buffer and sampled in random batches to break correlation between consecutive training steps.
 
 ## Planned Evaluation
 
@@ -97,23 +97,23 @@ connect-four-rl/
 ├── .gitignore
 │
 ├── src/
-│   ├── main.py
-│   ├── board.py
-│   ├── game.py
-│   ├── players.py
+│   ├── main.py             
+│   ├── board.py    
+│   ├── game.py      
+│   ├── players.py       
 │   │
 │   └── ai/
-│       ├── q_learning.py
-│       ├── heuristic.py
-│       └── minimax.py
+│       ├── dqn.py
+│       ├── heuristic.py   
+│       └── minimax.py   
 │
 ├── tests/
-│   ├── test_board.py
+│   ├── test_board.py   
 │   ├── test_win_detection.py
-│   └── test_ai_moves.py
+│   └── test_ai_moves.py   
 │
 └── experiments/
-    └── run_matches.py
+    └── run_matches.py     
 ```
 
 ## Setup
