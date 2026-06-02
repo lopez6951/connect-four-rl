@@ -1,17 +1,1 @@
-mkdir -p src/ai tests experiments
-
-touch src/main.py
-touch src/board.py
-touch src/game.py
-touch src/players.py
-
-touch src/ai/minimax.py
-touch src/ai/alphabeta.py
-touch src/ai/heuristic.py
-
-touch tests/test_board.py
-touch tests/test_win_detection.py
-touch tests/test_ai_moves.py
-
-touch experiments/run_matches.py
-touch requirements.txt
+pytest
