@@ -4,25 +4,14 @@
 
 This project builds a Connect Four game and reinforcement learning agent from scratch in Python. The goal is to train an AI agent that can learn stronger Connect Four moves by playing repeated games and improving its strategy based on rewards.
 
-Connect Four is a good AI problem because the agent must choose actions in a competitive environment where each move changes the future state of the game. Instead of manually programming every move, our reinforcement learning agent will learn from experience by receiving rewards for winning, losing, or drawing games.
+We chose Connect Four because it's simple enough to implement quickly but hard enough that an agent can't just stumble into good play. The agent must choose actions in a competitive environment where each move changes the future state of the game. Instead of manually programming every move, our reinforcement learning agent will learn from experience by receiving rewards for winning, losing, or drawing games.
 
 ## Why This Is AI
 
 This project implements Deep Q-Network (DQN) reinforcement learning from scratch. The agent observes the current board state as a numerical array, passes it through a neural network to estimate Q-values for each possible action, and selects moves using an epsilon-greedy policy. Over thousands of training games, the network learns to approximate the value of each (state, action) pair and improves its play accordingly.
 
-The core challenge is that Connect Four has an enormous number of possible board configurations, making tabular Q-learning; where Q-values are stored in a lookup table — completely infeasible. DQN addresses this by using a neural network as a function approximator, allowing the agent to generalize from seen board states to unseen ones.
+The core AI challenge is generalization. Plain tabular Q-learning can't handle this because there are too many unique board states to ever store or explore them all. We use a Deep Q-Network (DQN) instead, where a neural network approximates Q-values across the state space, allowing the agent to make informed decisions on board positions it has never seen before.
 
-## AI Methods
-
-The main AI techniques we plan to implement are:
-
-* Deep Q-Network (DQN) with a fully connected neural network (PyTorch)
-* Epsilon-greedy exploration with decay over training
-* Experience replay buffer for stable training
-* Target network with periodic updates to reduce training instability
-* Reward-based policy updates using the Bellman equation
-* Baseline agents: random player and greedy heuristic player
-* Optional: self-play training and minimax comparison agent
 
 ## Reinforcement Learning Setup
 
@@ -115,7 +104,10 @@ connect-four-rl/
 │   └── test_ai_moves.py    # Tests for move legality and agent behavior
 │
 └── experiments/
-    └── run_matches.py      # Scripts to run evaluation tournaments and log results
+    │   └── run_matches.py      # Evaluation tournaments and result logging
+│
+└── results/                    # Saved models and training output
+    └── dqn_final.pt
 ```
 
 ## Setup
