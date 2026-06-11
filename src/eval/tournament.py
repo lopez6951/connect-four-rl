@@ -1,27 +1,26 @@
 """
-eval/tournament.py — Round-robin evaluation tournaments.
+tournament.py — evaluation tournaments
 
 Usage:
     python src/eval/tournament.py
 """
 
-import sys
 import os
 from typing import Any, Optional, Tuple
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from env.board import P1, P2
-from env.game import Game
-from self_play.player import RandomPlayer, GreedyPlayer
-from eval.elo import EloTracker
+from ..env.board import P1, P2
+from ..env.game import Game
+from ..self_play.player import RandomPlayer, GreedyPlayer
+from .elo import EloTracker
 
+# 
 N_GAMES    = 200
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "results", "q_table.pkl")
 
 
-def run_match(p1: Any, p2: Any, p1_name: str, p2_name: str,
-              n: int = N_GAMES,
+def run_match(p1: Any, p2: Any, p1_name: str, p2_name: str, n: int = N_GAMES,
               tracker: Optional[EloTracker] = None) -> Tuple[int, int, int]:
+    '''Play n games between p1 and p2 and return/update from p1 perspective'''
     wins = losses = draws = 0
     lengths = []
 
@@ -29,6 +28,8 @@ def run_match(p1: Any, p2: Any, p1_name: str, p2_name: str,
         g = Game(p1, p2, verbose=False)
         winner, history = g.play()
         lengths.append(len(history))
+
+        # Count result from p1 view
         if winner == P1:
             wins += 1
         elif winner == P2:
@@ -36,9 +37,11 @@ def run_match(p1: Any, p2: Any, p1_name: str, p2_name: str,
         else:
             draws += 1
 
+    # Update Elo ratings
     if tracker:
         tracker.update_match(p1_name, p2_name, wins, losses, draws)
 
+    # one sum line/per
     avg = sum(lengths) / len(lengths) if lengths else 0
     print(
         f"{p1_name:<16} vs {p2_name:<16} | "
@@ -51,13 +54,16 @@ def run_match(p1: Any, p2: Any, p1_name: str, p2_name: str,
 
 
 def main() -> None:
+    '''main'''
     tracker = EloTracker()
-
+    
+    # Baseline
     agents = {
         "Random": RandomPlayer(),
         "Greedy": GreedyPlayer(),
     }
 
+    # Load Q-learning agent if exists
     if os.path.exists(MODEL_PATH):
         try:
             from model.trainer import QLearningAgent
@@ -75,14 +81,15 @@ def main() -> None:
     print(f"\nTournament — {N_GAMES} games per match\n")
     print("-" * 75)
 
+    # every agent plays every other agent
     for n1 in names:
         for n2 in names:
             if n1 != n2:
                 run_match(agents[n1], agents[n2], n1, n2, tracker=tracker)
 
+    # leaderboard
     print()
     print(tracker)
-
 
 if __name__ == "__main__":
     main()
