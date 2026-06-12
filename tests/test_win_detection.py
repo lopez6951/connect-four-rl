@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from env.board import Board, P1, P2
+from env.board import Board, P1, P2, P3
 
 
 def test_horizontal_win():
@@ -19,11 +19,11 @@ def test_vertical_win():
     assert b.check_win(P2)
 
 
-def test_diagonal_win():
+def test_diagonal_win_for_third_player():
     b = Board()
-    # Build positive-slope diagonal for P1.
-    b.drop(0, P1)
-    b.drop(1, P2); b.drop(1, P1)
-    b.drop(2, P2); b.drop(2, P2); b.drop(2, P1)
-    b.drop(3, P2); b.drop(3, P2); b.drop(3, P2); b.drop(3, P1)
-    assert b.check_win(P1)
+    # Build positive-slope diagonal for P3.
+    b.drop(0, P3)
+    b.drop(1, P1); b.drop(1, P3)
+    b.drop(2, P1); b.drop(2, P2); b.drop(2, P3)
+    b.drop(3, P1); b.drop(3, P2); b.drop(3, P1); b.drop(3, P3)
+    assert b.check_win(P3)

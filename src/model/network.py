@@ -1,8 +1,6 @@
 """
-model/network.py
+Placeholder module.
 
-Placeholder module for possible future DQN extension.
-For the current project, we use tabular Q-learning in trainer.py so that
-all reinforcement learning logic is implemented from scratch without
-external ML libraries.
+The current project uses tabular Q-learning from scratch, not a neural network.
+This file is kept for possible future DQN extension.
 """

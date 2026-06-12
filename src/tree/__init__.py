@@ -1,1 +1,1 @@
-# Optional game-tree search package
+# package

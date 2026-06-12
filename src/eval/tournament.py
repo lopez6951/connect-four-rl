@@ -1,97 +1,88 @@
 """
-tournament.py — evaluation tournaments
+eval/tournament.py — Three-player evaluation tournament.
 
 Usage:
-    python src/eval/tournament.py
+    python3 src/eval/tournament.py
 """
 
+from __future__ import annotations
 import os
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from typing import Any, Optional, Tuple
+from typing import Any
 
-from env.board import P1, P2
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from env.board import P1, P2, P3
 from env.game import Game
-from self_play.player import RandomPlayer, GreedyPlayer
+from self_play.player import RandomPlayer, GreedyPlayer, QLearningPlayer
+from model.trainer import QLearningAgent
 from eval.elo import EloTracker
 
-# 
-N_GAMES    = 200
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "results", "q_table.pkl")
+N_GAMES = 200
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "results", "q_table_3p.pkl")
 
 
-def run_match(p1: Any, p2: Any, p1_name: str, p2_name: str, n: int = N_GAMES,
-              tracker: Optional[EloTracker] = None) -> Tuple[int, int, int]:
-    '''Play n games between p1 and p2 and return/update from p1 perspective'''
-    wins = losses = draws = 0
+def run_match(p1: Any, p2: Any, p3: Any, names: list[str], n: int = N_GAMES, tracker: EloTracker | None = None) -> dict[str, int]:
+    results = {"p1_wins": 0, "p2_wins": 0, "p3_wins": 0, "draws": 0}
     lengths = []
 
     for _ in range(n):
-        g = Game(p1, p2, verbose=False)
+        g = Game(p1, p2, p3, verbose=False)
         winner, history = g.play()
         lengths.append(len(history))
 
-        # Count result from p1 view
         if winner == P1:
-            wins += 1
+            results["p1_wins"] += 1
+            if tracker:
+                tracker.update_three_player_result(names, names[0])
         elif winner == P2:
-            losses += 1
+            results["p2_wins"] += 1
+            if tracker:
+                tracker.update_three_player_result(names, names[1])
+        elif winner == P3:
+            results["p3_wins"] += 1
+            if tracker:
+                tracker.update_three_player_result(names, names[2])
         else:
-            draws += 1
+            results["draws"] += 1
+            if tracker:
+                tracker.update_three_player_result(names, None)
 
-    # Update Elo ratings
-    if tracker:
-        tracker.update_match(p1_name, p2_name, wins, losses, draws)
-
-    # one sum line/per
     avg = sum(lengths) / len(lengths) if lengths else 0
-    print(
-        f"{p1_name:<16} vs {p2_name:<16} | "
-        f"W {wins:3d} ({wins/n:4.0%})  "
-        f"L {losses:3d} ({losses/n:4.0%})  "
-        f"D {draws:3d} ({draws/n:4.0%})  "
-        f"avg {avg:.1f} moves"
-    )
-    return wins, losses, draws
+    print(f"{names[0]} vs {names[1]} vs {names[2]}")
+    print(f"  {results} | avg {avg:.1f} moves")
+    return results
 
 
 def main() -> None:
-    '''main'''
     tracker = EloTracker()
-    
-    # Baseline
-    agents = {
+
+    agents: dict[str, Any] = {
         "Random": RandomPlayer(),
         "Greedy": GreedyPlayer(),
     }
 
-    # Load Q-learning agent if exists
     if os.path.exists(MODEL_PATH):
-        try:
-            from model.trainer import QLearningAgent
-            from self_play.player import QLearningPlayer
-            agent = QLearningAgent()
-            agent.load(MODEL_PATH)
-            agent.epsilon = 0.0
-            agents["Q-Learning"] = QLearningPlayer(agent)
-        except Exception as e:
-            print(f"Could not load Q-learning agent: {e}")
+        agent = QLearningAgent()
+        agent.load(MODEL_PATH)
+        agent.epsilon = 0.0
+        agents["Q-learning"] = QLearningPlayer(agent)
     else:
-        print("No trained Q-table found. Run: python src/main.py train\n")
+        print("No trained 3-player Q-table found. Run: python3 src/main.py train\n")
 
-    names = list(agents.keys())
-    print(f"\nTournament — {N_GAMES} games per match\n")
-    print("-" * 75)
+    print(f"\nThree-player tournament — {N_GAMES} games per match\n")
+    print("-" * 80)
 
-    # every agent plays every other agent
-    for n1 in names:
-        for n2 in names:
-            if n1 != n2:
-                run_match(agents[n1], agents[n2], n1, n2, tracker=tracker)
+    run_match(RandomPlayer(), GreedyPlayer(), GreedyPlayer(), ["Random", "Greedy", "Greedy"], tracker=tracker)
 
-    # leaderboard
+    if "Q-learning" in agents:
+        run_match(agents["Q-learning"], RandomPlayer(), RandomPlayer(), ["Q-learning", "Random", "Random"], tracker=tracker)
+        run_match(agents["Q-learning"], GreedyPlayer(), GreedyPlayer(), ["Q-learning", "Greedy", "Greedy"], tracker=tracker)
+        run_match(agents["Q-learning"], RandomPlayer(), GreedyPlayer(), ["Q-learning", "Random", "Greedy"], tracker=tracker)
+
     print()
     print(tracker)
+
 
 if __name__ == "__main__":
     main()
