@@ -1,116 +1,96 @@
 """
-env/board.py
-Core Connect Four board logic.
-
-Cells:
-    EMPTY = 0
-    P1    = 1
-    P2    = 2
+board.py — Connect Four board state, legal moves, win/draw detection
 """
 
-from __future__ import annotations
-from copy import deepcopy
-from typing import List, Optional, Tuple
+import numpy as np
+from typing import List
 
 ROWS = 6
 COLS = 7
-CONNECT_N = 4
-
 EMPTY = 0
 P1 = 1
-P2 = 2
+P2 = -1
 
 
 class Board:
-    def __init__(self, grid: Optional[List[List[int]]] = None) -> None:
-        if grid is None:
-            self.grid = [[EMPTY for _ in range(COLS)] for _ in range(ROWS)]
-        else:
-            self.grid = deepcopy(grid)
+    '''Create a 6x7 grid filled with empty cells'''
+    def __init__(self) -> None:
+        self.grid = np.zeros((ROWS, COLS), dtype=int)
 
     def copy(self) -> "Board":
-        return Board(self.grid)
+        '''Return deep copy so changes dont affect orig'''
+        b = Board()
+        b.grid = self.grid.copy()
+        return b
 
+    # Moves
     def legal_moves(self) -> List[int]:
-        """Return columns that are not full."""
+        '''A column is legal if the top row is still empty'''
         return [c for c in range(COLS) if self.grid[0][c] == EMPTY]
 
-    def is_valid_move(self, col: int) -> bool:
+    def is_legal(self, col: int) -> bool:
+        '''Check column is in bounds and not full'''
         return 0 <= col < COLS and self.grid[0][col] == EMPTY
 
     def drop(self, col: int, player: int) -> int:
-        """
-        Drop a piece into a column.
-        Returns the row where the piece lands.
-        Raises ValueError if the move is illegal.
-        """
-        if player not in (P1, P2):
-            raise ValueError("player must be P1 or P2")
-        if not self.is_valid_move(col):
-            raise ValueError(f"Illegal move: column {col}")
+        '''Drop a piece. Returns the row where the piece landed, or -1 if illegal'''
+        if not self.is_legal(col):
+            return -1
+        for row in range(ROWS - 1, -1, -1):
+            if self.grid[row][col] == EMPTY:
+                self.grid[row][col] = player
+                return row
+        return -1  # unreachable if is_legal passed
 
-        for r in range(ROWS - 1, -1, -1):
-            if self.grid[r][col] == EMPTY:
-                self.grid[r][col] = player
-                return r
-        raise ValueError(f"Column {col} is full")
 
-    def undo_drop(self, col: int) -> None:
-        """Remove the top-most piece from a column. Useful for search."""
-        for r in range(ROWS):
-            if self.grid[r][col] != EMPTY:
-                self.grid[r][col] = EMPTY
-                return
-        raise ValueError(f"Column {col} is already empty")
-
-    def is_draw(self) -> bool:
-        return len(self.legal_moves()) == 0 and not self.check_win(P1) and not self.check_win(P2)
-
+    # Terminal checks
     def check_win(self, player: int) -> bool:
-        """Check horizontal, vertical, and diagonal connect-four."""
+        '''Return True if player has four in a row'''
+        g = self.grid
         # Horizontal
         for r in range(ROWS):
-            for c in range(COLS - CONNECT_N + 1):
-                if all(self.grid[r][c + i] == player for i in range(CONNECT_N)):
+            for c in range(COLS - 3):
+                if all(g[r][c + i] == player for i in range(4)):
                     return True
-
         # Vertical
-        for r in range(ROWS - CONNECT_N + 1):
+        for r in range(ROWS - 3):
             for c in range(COLS):
-                if all(self.grid[r + i][c] == player for i in range(CONNECT_N)):
+                if all(g[r + i][c] == player for i in range(4)):
                     return True
-
-        # Diagonal down-right
-        for r in range(ROWS - CONNECT_N + 1):
-            for c in range(COLS - CONNECT_N + 1):
-                if all(self.grid[r + i][c + i] == player for i in range(CONNECT_N)):
+        # Diagonal top-left
+        for r in range(ROWS - 3):
+            for c in range(COLS - 3):
+                if all(g[r + i][c + i] == player for i in range(4)):
                     return True
-
-        # Diagonal up-right
-        for r in range(CONNECT_N - 1, ROWS):
-            for c in range(COLS - CONNECT_N + 1):
-                if all(self.grid[r - i][c + i] == player for i in range(CONNECT_N)):
+        # Diagonal top-right
+        for r in range(ROWS - 3):
+            for c in range(3, COLS):
+                if all(g[r + i][c - i] == player for i in range(4)):
                     return True
-
         return False
 
-    def terminal_winner(self) -> Optional[int]:
-        """Return P1/P2 for winner, 0 for draw, or None if game is not over."""
-        if self.check_win(P1):
-            return P1
-        if self.check_win(P2):
-            return P2
-        if self.is_draw():
-            return 0
-        return None
+    def is_draw(self) -> bool:
+        '''Return True + draw if no legal moves remain'''
+        return len(self.legal_moves()) == 0
 
-    def encode_for_player(self, player: int) -> Tuple[int, ...]:
-        """
-        Encode board from current player's perspective for RL:
-        current player's pieces -> 1, opponent pieces -> -1, empty -> 0.
-        """
+    def is_terminal(self) -> bool:
+        '''Game over if either player has won or the board is full'''
+        return self.check_win(P1) or self.check_win(P2) or self.is_draw()
+
+
+    # State representation for Q-learning
+    def to_state(self, perspective: int = P1) -> np.ndarray:
+        '''flatten grid into 42 elem array'''
+        # for agent- own pieces = 1, opponent = -1, empty = 0
+        flat = self.grid.flatten().astype(float)
+        if perspective == P2:
+            flat = flat * -1
+        return flat
+
+    def encode_for_player(self, player: int) -> tuple:
+        '''Encode board as tuple for Q-table lookup from player perspective'''
         opponent = P2 if player == P1 else P1
-        out: list[int] = []
+        out = []
         for row in self.grid:
             for cell in row:
                 if cell == player:
@@ -121,17 +101,31 @@ class Board:
                     out.append(0)
         return tuple(out)
 
-    def pretty(self) -> str:
-        chars = {EMPTY: ".", P1: "X", P2: "O"}
-        lines = [" ".join(chars[cell] for cell in row) for row in self.grid]
-        lines.append("0 1 2 3 4 5 6")
+    # Display
+    def __str__(self) -> str:
+        # Print a bordered grid with X for P1, O for P2, empty for blank
+        lines = []
+        lines.append("┌" + "───┬" * (COLS - 1) + "───┐")
+        for r in range(ROWS):
+            row = "|"
+            for c in range(COLS):
+                v = self.grid[r][c]
+                if v == P1:
+                    row += " X |"
+                elif v == P2:
+                    row += " O |"
+                else:
+                    row += "   |"
+            lines.append(row)
+            if r < ROWS - 1:
+                lines.append("├" + "───┼" * (COLS - 1) + "───┤")
+        lines.append("└" + "───┴" * (COLS - 1) + "───┘")
+        lines.append("  " + "   ".join(str(c) for c in range(COLS)))
         return "\n".join(lines)
 
-    def __str__(self) -> str:
-        return self.pretty()
-
-
+    #other player
 def other_player(player: int) -> int:
+    '''Return the other player constant'''
     if player == P1:
         return P2
     if player == P2:

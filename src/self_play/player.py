@@ -7,16 +7,15 @@ from __future__ import annotations
 import random
 from typing import Protocol
 
-from env.board import Board, P1, P2, other_player
-
+from env.board import Board, other_player
 
 class Player(Protocol):
-    def choose_move(self, board: Board, player: int) -> int:
+    def choose_action(self, board: Board, player: int) -> int:
         ...
 
 
 class RandomPlayer:
-    def choose_move(self, board: Board, player: int) -> int:
+    def choose_action(self, board: Board, player: int) -> int:
         return random.choice(board.legal_moves())
 
 
@@ -28,7 +27,7 @@ class GreedyPlayer:
     3. Prefer center columns.
     """
 
-    def choose_move(self, board: Board, player: int) -> int:
+    def choose_action(self, board: Board, player: int) -> int:
         legal = board.legal_moves()
         opponent = other_player(player)
 
@@ -56,7 +55,7 @@ class GreedyPlayer:
 
 
 class HumanPlayer:
-    def choose_move(self, board: Board, player: int) -> int:
+    def choose_action(self, board: Board, player: int) -> int:
         while True:
             try:
                 col = int(input(f"Player {player}, choose column {board.legal_moves()}: "))
@@ -71,6 +70,6 @@ class QLearningPlayer:
     def __init__(self, agent: object) -> None:
         self.agent = agent
 
-    def choose_move(self, board: Board, player: int) -> int:
+    def choose_action(self, board: Board, player: int) -> int:
         # Agent object must implement choose_action(board, player, training=False)
         return self.agent.choose_action(board, player, training=False)

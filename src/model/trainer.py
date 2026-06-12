@@ -9,13 +9,16 @@ This is reinforcement learning from scratch:
 """
 
 from __future__ import annotations
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 import os
 import pickle
 import random
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
-from env.board import Board, COLS, P1, P2, other_player
+from env.board import Board, COLS, P1, P2
 from self_play.player import RandomPlayer, GreedyPlayer
 
 State = Tuple[int, ...]
@@ -137,7 +140,7 @@ def train_q_learning(
                 break
 
             # Opponent turn.
-            opp_action = opponent.choose_move(board.copy(), P2)
+            opp_action = opponent.choose_action(board.copy(), P2)
             board.drop(opp_action, P2)
 
             if board.check_win(P2):

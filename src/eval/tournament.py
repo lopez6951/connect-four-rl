@@ -6,12 +6,14 @@ Usage:
 """
 
 import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from typing import Any, Optional, Tuple
 
-from ..env.board import P1, P2
-from ..env.game import Game
-from ..self_play.player import RandomPlayer, GreedyPlayer
-from .elo import EloTracker
+from env.board import P1, P2
+from env.game import Game
+from self_play.player import RandomPlayer, GreedyPlayer
+from eval.elo import EloTracker
 
 # 
 N_GAMES    = 200

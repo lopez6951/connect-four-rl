@@ -128,7 +128,7 @@ def main() -> None:
         nonlocal current, game_over, winner
         if game_over or current != P2:
             return
-        col = ai.choose_move(board.copy(), P2)
+        col = ai.choose_action(board.copy(), P2)
         if col in board.legal_moves():
             board.drop(col, P2)
         if board.check_win(P2):
