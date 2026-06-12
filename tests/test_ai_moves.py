@@ -2,22 +2,30 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from env.board import Board, P1, P2
+from env.board import Board, P1, P2, P3, COLS
 from self_play.player import RandomPlayer, GreedyPlayer
 from model.trainer import QLearningAgent
 
 
 def test_random_player_returns_legal_move():
     b = Board()
-    move = RandomPlayer().choose_action(b, P1)
+    move = RandomPlayer().choose_move(b, P1)
     assert move in b.legal_moves()
 
 
 def test_greedy_player_takes_winning_move():
     b = Board()
     for c in [0, 1, 2]:
-        b.drop(c, P1)
-    move = GreedyPlayer().choose_action(b, P1)
+        b.drop(c, P2)
+    move = GreedyPlayer().choose_move(b, P2)
+    assert move == 3
+
+
+def test_greedy_player_blocks_third_player():
+    b = Board()
+    for c in [0, 1, 2]:
+        b.drop(c, P3)
+    move = GreedyPlayer().choose_move(b, P1)
     assert move == 3
 
 

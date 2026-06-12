@@ -1,1 +1,1 @@
-# Connect Four environment package
+# package

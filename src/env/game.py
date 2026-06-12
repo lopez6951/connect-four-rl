@@ -1,56 +1,54 @@
 """
-game.py - Two-player Connect Four game loop
+env/game.py
+Three-player Connect Four game loop.
 """
 
-from typing import Any
-from env.board import Board, P1, P2
+from __future__ import annotations
+from typing import Any, List, Tuple
+
+from env.board import Board, P1, P2, P3, PLAYERS, next_player
+
 
 class Game:
-    '''to run game'''
-
-    def __init__(self, player1: Any, player2: Any, verbose: bool = True) -> None:
-        '''Store players in a dict'''
-        self.players = {P1: player1, P2: player2}
+    def __init__(self, p1: Any, p2: Any, p3: Any, verbose: bool = False) -> None:
+        self.board = Board()
+        self.players = {P1: p1, P2: p2, P3: p3}
+        self.current = P1
         self.verbose = verbose
 
-    def play(self) -> tuple[int, list[tuple[Any, int, int]]]:
-        '''Run a full game to completion'''
-        board   = Board()
-        history: list[tuple[Any, int, int]] = []
-        current = P1
+    def play(self) -> Tuple[int, List[Tuple[int, int]]]:
+        """
+        Play until terminal.
+        Returns (winner, history). winner is P1/P2/P3/0 for draw.
+        history contains (player, column) moves.
+        """
+        history: List[Tuple[int, int]] = []
 
         while True:
             if self.verbose:
-                print(f"\n{'Player 1 (X)' if current == P1 else 'Player 2 (O)'}'s turn")
-                print(board)
+                print(self.board)
+                print()
 
-            # Ask the current player to pick a column
-            col = self.players[current].choose_action(board, current)
+            player_obj = self.players[self.current]
+            col = player_obj.choose_move(self.board.copy(), self.current)
 
-            # If player returns illegal move, opp wins
-            if not board.is_legal(col):
-                winner = P2 if current == P1 else P1
+            if col not in self.board.legal_moves():
+                # Illegal move loses; for simplicity, next player is declared winner.
+                return next_player(self.current), history
+
+            self.board.drop(col, self.current)
+            history.append((self.current, col))
+
+            if self.board.check_win(self.current):
                 if self.verbose:
-                    print("Illegal move! Opponent wins.")
-                return winner, history
+                    print(self.board)
+                    print(f"Player {self.current} wins!")
+                return self.current, history
 
-            # record + apply to board
-            history.append((board.to_state(current), col, current))
-            board.drop(col, current)
-
-            # check if won game
-            if board.check_win(current):
+            if self.board.is_draw():
                 if self.verbose:
-                    print(board)
-                    print(f"\n{'Player 1 (X)' if current == P1 else 'Player 2 (O)'} wins!")
-                return current, history
-
-            # check if draw
-            if board.is_draw():
-                if self.verbose:
-                    print(board)
-                    print("\nIt's a draw!")
+                    print(self.board)
+                    print("Draw!")
                 return 0, history
 
-            # then switch
-            current = P2 if current == P1 else P1
+            self.current = next_player(self.current)

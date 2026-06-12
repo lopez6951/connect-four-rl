@@ -1,94 +1,89 @@
 """
-main.py - Command line entry point.
-
-Examples:
-    python src/main.py
-    python src/main.py train --episodes 5000
-    python src/main.py eval --games 200
-    python src/main.py play
+src/main.py
+Command-line entry point for three-player Connect Four RL.
 """
 
 from __future__ import annotations
 import argparse
 import os
+import sys
+from typing import Any
 
-from env.board import P1, P2
+sys.path.insert(0, os.path.dirname(__file__))
+
+from env.board import Board, P1, P2, P3
 from env.game import Game
 from self_play.player import HumanPlayer, RandomPlayer, GreedyPlayer, QLearningPlayer
-from model.trainer import QLearningAgent, train_q_learning
 from self_play.loop import play_many
+from model.trainer import QLearningAgent, train_q_learning
 
-MODEL_PATH = "results/q_table.pkl"
+MODEL_PATH = "results/q_table_3p.pkl"
+
+
+def load_q_player() -> QLearningPlayer:
+    agent = QLearningAgent()
+    if os.path.exists(MODEL_PATH):
+        agent.load(MODEL_PATH)
+        agent.epsilon = 0.0
+        print(f"Loaded trained 3-player Q-learning agent from {MODEL_PATH}")
+    else:
+        print("No trained 3-player Q-table found. Using untrained Q-agent.")
+    return QLearningPlayer(agent)
 
 
 def cmd_train(args: argparse.Namespace) -> None:
-    train_q_learning(episodes=args.episodes, opponent_name=args.opponent, save_path=MODEL_PATH)
+    train_q_learning(
+        episodes=args.episodes,
+        opponent_name=args.opponent,
+        save_path=MODEL_PATH,
+    )
 
 
 def cmd_eval(args: argparse.Namespace) -> None:
-    print("Evaluating agents...")
+    q_player = load_q_player()
+    print("\nEvaluating three-player agents...\n")
 
-    random_player = RandomPlayer()
-    greedy_player = GreedyPlayer()
+    comparisons: list[tuple[str, Any, Any, Any]] = [
+        ("Random vs Greedy vs Greedy", RandomPlayer(), GreedyPlayer(), GreedyPlayer()),
+        ("Q-learning vs Random vs Random", q_player, RandomPlayer(), RandomPlayer()),
+        ("Q-learning vs Greedy vs Greedy", q_player, GreedyPlayer(), GreedyPlayer()),
+        ("Q-learning vs Random vs Greedy", q_player, RandomPlayer(), GreedyPlayer()),
+    ]
 
-    if os.path.exists(MODEL_PATH):
-        agent = QLearningAgent()
-        agent.load(MODEL_PATH)
-        agent.epsilon = 0.0
-        q_player = QLearningPlayer(agent)
-        print(f"Loaded trained Q-learning agent from {MODEL_PATH}")
-    else:
-        print("No trained model found yet. Run: python src/main.py train")
-        q_player = None
-
-    print("\nRandom vs Greedy")
-    print(play_many(random_player, greedy_player, n_games=args.games))
-
-    if q_player is not None:
-        print("\nQ-Learning vs Random")
-        print(play_many(q_player, random_player, n_games=args.games))
-        print("\nQ-Learning vs Greedy")
-        print(play_many(q_player, greedy_player, n_games=args.games))
+    for name, p1, p2, p3 in comparisons:
+        results = play_many(p1, p2, p3, n_games=args.games)
+        print(name)
+        print(results)
+        print()
 
 
 def cmd_play(args: argparse.Namespace) -> None:
-    print("Human is Player 1 (X). AI is Player 2 (O).")
-
-    if os.path.exists(MODEL_PATH):
-        agent = QLearningAgent()
-        agent.load(MODEL_PATH)
-        agent.epsilon = 0.0
-        ai = QLearningPlayer(agent)
-        print(f"Loaded Q-learning AI from {MODEL_PATH}")
+    q_player = load_q_player()
+    print("Terminal mode: You are Player 1, Q-agent is Player 2, Greedy is Player 3.\n")
+    winner, history = Game(HumanPlayer(), q_player, GreedyPlayer(), verbose=True).play()
+    print("Final result:")
+    if winner == 0:
+        print("Draw")
     else:
-        ai = GreedyPlayer()
-        print("No trained Q-table found. Using Greedy AI instead.")
-
-    game = Game(HumanPlayer(), ai, verbose=True)
-    winner, _ = game.play()
-    if winner == P1:
-        print("You won!")
-    elif winner == P2:
-        print("AI won!")
-    else:
-        print("Draw!")
+        print(f"Player {winner} wins")
+    print(f"Moves played: {len(history)}")
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Connect Four RL Agent")
+    parser = argparse.ArgumentParser(description="Three-player Connect Four RL")
     sub = parser.add_subparsers(dest="command")
 
-    train_p = sub.add_parser("train", help="Train Q-learning agent")
-    train_p.add_argument("--episodes", type=int, default=5000)
-    train_p.add_argument("--opponent", choices=["random", "greedy"], default="random")
-    train_p.set_defaults(func=cmd_train)
+    p_train = sub.add_parser("train", help="Train Q-learning agent")
+    p_train.add_argument("--episodes", type=int, default=5000)
+    p_train.add_argument("--opponent", choices=["random", "greedy"], default="random")
+    p_train.set_defaults(func=cmd_train)
 
-    eval_p = sub.add_parser("eval", help="Evaluate agents")
-    eval_p.add_argument("--games", type=int, default=200)
-    eval_p.set_defaults(func=cmd_eval)
+    p_eval = sub.add_parser("eval", help="Evaluate agents")
+    p_eval.add_argument("--games", type=int, default=200)
+    p_eval.set_defaults(func=cmd_eval)
 
-    play_p = sub.add_parser("play", help="Play against the trained agent in terminal")
-    play_p.set_defaults(func=cmd_play)
+    p_play = sub.add_parser("play", help="Play terminal game")
+    p_play.set_defaults(func=cmd_play)
 
     return parser
 
@@ -97,14 +92,15 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    if args.command is None:
-        print("Connect Four RL Agent")
-        print("Project environment is set up successfully.")
+    if not hasattr(args, "func"):
+        print("Three-Player Connect Four RL Agent")
+        print("Board: 8 rows x 10 columns")
         print("Commands:")
-        print("  python src/main.py train --episodes 5000")
-        print("  python src/main.py eval --games 200")
-        print("  python src/main.py play")
-        print("  python src/main_visual.py")
+        print("  python3 src/main.py train --episodes 5000")
+        print("  python3 src/main.py train --episodes 5000 --opponent greedy")
+        print("  python3 src/main.py eval --games 200")
+        print("  python3 src/main.py play")
+        print("  python3 src/main_visual.py")
         return
 
     args.func(args)

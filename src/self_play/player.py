@@ -7,29 +7,29 @@ from __future__ import annotations
 import random
 from typing import Protocol
 
-from env.board import Board, other_player
+from env.board import Board, COLS, PLAYERS, opponents
+
 
 class Player(Protocol):
-    def choose_action(self, board: Board, player: int) -> int:
+    def choose_move(self, board: Board, player: int) -> int:
         ...
 
 
 class RandomPlayer:
-    def choose_action(self, board: Board, player: int) -> int:
+    def choose_move(self, board: Board, player: int) -> int:
         return random.choice(board.legal_moves())
 
 
 class GreedyPlayer:
     """
-    Simple baseline:
+    Simple three-player baseline:
     1. Win immediately if possible.
-    2. Block opponent's immediate win if possible.
+    2. Block any opponent's immediate winning move.
     3. Prefer center columns.
     """
 
-    def choose_action(self, board: Board, player: int) -> int:
+    def choose_move(self, board: Board, player: int) -> int:
         legal = board.legal_moves()
-        opponent = other_player(player)
 
         # Take winning move.
         for col in legal:
@@ -38,24 +38,22 @@ class GreedyPlayer:
             if b.check_win(player):
                 return col
 
-        # Block opponent winning move.
-        for col in legal:
-            b = board.copy()
-            b.drop(col, opponent)
-            if b.check_win(opponent):
-                return col
+        # Block either opponent's immediate winning move.
+        for opponent in opponents(player):
+            for col in legal:
+                b = board.copy()
+                b.drop(col, opponent)
+                if b.check_win(opponent):
+                    return col
 
-        # Prefer center columns.
-        preferred = [3, 2, 4, 1, 5, 0, 6]
-        for col in preferred:
-            if col in legal:
-                return col
-
-        return random.choice(legal)
+        # Prefer center columns on the larger board.
+        center = COLS // 2
+        preferred = sorted(legal, key=lambda c: abs(c - center))
+        return preferred[0] if preferred else random.choice(legal)
 
 
 class HumanPlayer:
-    def choose_action(self, board: Board, player: int) -> int:
+    def choose_move(self, board: Board, player: int) -> int:
         while True:
             try:
                 col = int(input(f"Player {player}, choose column {board.legal_moves()}: "))
@@ -63,13 +61,12 @@ class HumanPlayer:
                     return col
                 print("Illegal column. Try again.")
             except ValueError:
-                print("Please enter a number from 0 to 6.")
+                print(f"Please enter a number from 0 to {COLS - 1}.")
 
 
 class QLearningPlayer:
     def __init__(self, agent: object) -> None:
         self.agent = agent
 
-    def choose_action(self, board: Board, player: int) -> int:
-        # Agent object must implement choose_action(board, player, training=False)
+    def choose_move(self, board: Board, player: int) -> int:
         return self.agent.choose_action(board, player, training=False)

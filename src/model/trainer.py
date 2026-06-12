@@ -1,24 +1,21 @@
 """
 model/trainer.py
-Tabular Q-learning agent for Connect Four.
+Tabular Q-learning agent for larger three-player Connect Four.
 
 This is reinforcement learning from scratch:
-- state = board encoded from current player's perspective
+- state = 8x10 board encoded from the current player's perspective
 - action = legal column
 - update = Q-learning Bellman update
 """
 
 from __future__ import annotations
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 import os
 import pickle
 import random
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
-from env.board import Board, COLS, P1, P2
+from env.board import Board, COLS, P1, P2, P3
 from self_play.player import RandomPlayer, GreedyPlayer
 
 State = Tuple[int, ...]
@@ -86,6 +83,8 @@ class QLearningAgent:
             "epsilon": self.epsilon,
             "epsilon_min": self.epsilon_min,
             "epsilon_decay": self.epsilon_decay,
+            "rows_cols": "8x10",
+            "players": 3,
         }
         with open(path, "wb") as f:
             pickle.dump(payload, f)
@@ -101,19 +100,24 @@ class QLearningAgent:
         self.epsilon_decay = payload.get("epsilon_decay", self.epsilon_decay)
 
 
+def _make_opponent(name: str):
+    return GreedyPlayer() if name == "greedy" else RandomPlayer()
+
+
 def train_q_learning(
     episodes: int = 5000,
     opponent_name: str = "random",
-    save_path: str = "results/q_table.pkl",
+    save_path: str = "results/q_table_3p.pkl",
 ) -> QLearningAgent:
     """
-    Train Q-learning as Player 1 against a baseline Player 2.
+    Train Q-learning as Player 1 against two baseline opponents.
 
-    One training transition is measured from the agent's move to the next
-    time the agent gets to move, after the opponent has moved.
+    A transition is measured from the Q-agent's move to the next time
+    the Q-agent gets to move, after Player 2 and Player 3 have moved.
     """
     agent = QLearningAgent()
-    opponent = GreedyPlayer() if opponent_name == "greedy" else RandomPlayer()
+    p2 = _make_opponent(opponent_name)
+    p3 = _make_opponent(opponent_name)
 
     wins = losses = draws = 0
 
@@ -122,7 +126,7 @@ def train_q_learning(
         done = False
 
         while not done:
-            # Agent turn as P1.
+            # Q-agent turn as P1.
             state = agent.get_state(board, P1)
             action = agent.choose_action(board, P1, training=True)
             board.drop(action, P1)
@@ -139,9 +143,9 @@ def train_q_learning(
                 done = True
                 break
 
-            # Opponent turn.
-            opp_action = opponent.choose_action(board.copy(), P2)
-            board.drop(opp_action, P2)
+            # Player 2 opponent turn.
+            p2_action = p2.choose_move(board.copy(), P2)
+            board.drop(p2_action, P2)
 
             if board.check_win(P2):
                 agent.update(state, action, -1.0, None, [], True)
@@ -155,7 +159,23 @@ def train_q_learning(
                 done = True
                 break
 
-            # Non-terminal: update toward next state value.
+            # Player 3 opponent turn.
+            p3_action = p3.choose_move(board.copy(), P3)
+            board.drop(p3_action, P3)
+
+            if board.check_win(P3):
+                agent.update(state, action, -1.0, None, [], True)
+                losses += 1
+                done = True
+                break
+
+            if board.is_draw():
+                agent.update(state, action, 0.0, None, [], True)
+                draws += 1
+                done = True
+                break
+
+            # Non-terminal: update toward value at Q-agent's next turn.
             next_state = agent.get_state(board, P1)
             agent.update(state, action, 0.0, next_state, board.legal_moves(), False)
 
@@ -171,6 +191,6 @@ def train_q_learning(
             )
 
     agent.save(save_path)
-    print(f"\nSaved trained Q-table to: {save_path}")
+    print(f"\nSaved trained 3-player Q-table to: {save_path}")
     print(f"Learned states: {len(agent.q)}")
     return agent
