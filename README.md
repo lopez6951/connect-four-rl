@@ -32,6 +32,14 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
+## Results Plots
+
+### Two-Player Win/Loss/Draw Comparison
+![Two-player results](results/win_loss_draw_comparison.png)
+
+### Two-Player Q-Agent Move Heatmap
+![Two-player heatmap](results/q_agent_move_heatmap.png)
+
 
 ## Reproduce Results
 
