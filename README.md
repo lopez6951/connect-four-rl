@@ -10,7 +10,7 @@ The AI component is a tabular Q-learning agent. The agent observes the board sta
 
 ## Reinforcement Learning Setup
 
-- **State:** flattened board encoded from the current player's perspective (own pieces = 1, opponents = -1, empty = 0)
+- **State:** flattened board encoded from the current player's perspective (own = 1, opponents = -1, empty = 0)
 - **Action:** a legal column (0–6 for two-player, 0–9 for three-player)
 - **Players:** 2-player (P1 orange, P2 blue) or 3-player (P1 orange, P2 blue, P3 green)
 - **Reward:** +1 for win, -1 for loss, 0 for draw or non-terminal move
@@ -37,7 +37,7 @@ pip install -r requirements.txt
 
 ### Two-Player (6×7 board, branch: two-player)
 ```bash
-git checkout main
+git checkout two-player
 
 # Train the Q-learning agent
 python3 src/main.py train --episodes 50000
