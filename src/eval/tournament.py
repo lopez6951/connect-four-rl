@@ -73,11 +73,11 @@ def main() -> None:
     print(f"\nThree-player tournament — {N_GAMES} games per match\n")
     print("-" * 80)
 
-    run_match(RandomPlayer(), GreedyPlayer(), GreedyPlayer(), ["Random", "Greedy", "Greedy"], tracker=tracker)
+    run_match(RandomPlayer(), GreedyPlayer(), GreedyPlayer(), ["Random", "Greedy-1", "Greedy-2"], tracker=tracker)
 
     if "Q-learning" in agents:
-        run_match(agents["Q-learning"], RandomPlayer(), RandomPlayer(), ["Q-learning", "Random", "Random"], tracker=tracker)
-        run_match(agents["Q-learning"], GreedyPlayer(), GreedyPlayer(), ["Q-learning", "Greedy", "Greedy"], tracker=tracker)
+        run_match(agents["Q-learning"], RandomPlayer(), RandomPlayer(), ["Q-learning", "Random-1", "Random-2"], tracker=tracker)
+        run_match(agents["Q-learning"], GreedyPlayer(), GreedyPlayer(), ["Q-learning", "Greedy-1", "Greedy-2"], tracker=tracker)
         run_match(agents["Q-learning"], RandomPlayer(), GreedyPlayer(), ["Q-learning", "Random", "Greedy"], tracker=tracker)
 
     print()
