@@ -18,13 +18,20 @@ The AI component is a tabular Q-learning agent. The agent observes the board sta
 - **Update:** tabular Q-learning with Bellman equation from scratch
 
 ## Setup
+
+Create and activate a virtual environment:
+
 ```bash
-git clone https://github.com/lopez6951/connect-four-rl
-cd connect-four-rl
 python3 -m venv .venv
 source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
+
 
 ## Reproduce Results
 
@@ -74,6 +81,8 @@ pytest
 ```
 
 ## Code Organization
+
+```
 connect-four-rl/
 │
 ├── src/
@@ -88,7 +97,7 @@ connect-four-rl/
 │   │
 │   ├── model/
 │   │   ├── network.py        # Q-table data structure
-│   │   └── trainer.py        # Q-learning agent -> epsilon-greedy, Bellman update
+│   │   └── trainer.py        # Q-learning agent: epsilon-greedy, Bellman update
 │   │
 │   ├── self_play/
 │   │   ├── player.py         # RandomPlayer, GreedyPlayer, HumanPlayer, QLearningPlayer
@@ -108,6 +117,7 @@ connect-four-rl/
 │
 ├── results/                  # Saved Q-tables and plots
 └── requirements.txt
+```
 
 ## Team Members
 
