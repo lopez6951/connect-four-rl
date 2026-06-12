@@ -9,7 +9,7 @@ from model.trainer import QLearningAgent
 
 def test_random_player_returns_legal_move():
     b = Board()
-    move = RandomPlayer().choose_move(b, P1)
+    move = RandomPlayer().choose_action(b, P1)
     assert move in b.legal_moves()
 
 
@@ -17,7 +17,7 @@ def test_greedy_player_takes_winning_move():
     b = Board()
     for c in [0, 1, 2]:
         b.drop(c, P1)
-    move = GreedyPlayer().choose_move(b, P1)
+    move = GreedyPlayer().choose_action(b, P1)
     assert move == 3
 
 

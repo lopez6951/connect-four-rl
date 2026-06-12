@@ -3,7 +3,7 @@ board.py — Connect Four board state, legal moves, win/draw detection
 """
 
 import numpy as np
-from typing import List
+from typing import List, Optional
 
 ROWS = 6
 COLS = 7
@@ -79,6 +79,16 @@ class Board:
 
 
     # State representation for Q-learning
+    def terminal_winner(self) -> Optional[int]:
+        '''Return P1/P2 if won, 0 if draw, None if game still going'''
+        if self.check_win(P1):
+            return P1
+        if self.check_win(P2):
+            return P2
+        if self.is_draw():
+            return 0
+        return None
+
     def to_state(self, perspective: int = P1) -> np.ndarray:
         '''flatten grid into 42 elem array'''
         # for agent- own pieces = 1, opponent = -1, empty = 0
