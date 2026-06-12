@@ -69,7 +69,13 @@ python3 src/main.py train --episodes 5000
 Evaluate the agent:
 
 ```bash
-python3 src/main.py eval --games 200
+python src/main.py eval
+```
+
+Run full tournament with Elo:
+
+```bash
+python src/eval/tournament.py
 ```
 
 Play in terminal:
